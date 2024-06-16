@@ -1,0 +1,63 @@
+## ATIVIDADE 03 - ME921A ##
+#Mariana Peres Nascimento - RA204344
+
+
+Carregando os pacotes necessários
+```{r}
+library(mixer)
+library(tidyverse)
+library(network)
+library(magrittr)
+library(mclust)
+library(RColorBrewer)
+```
+
+
+Carregando os dados
+```{r}
+dados <- read_csv("Dados - Atividade 03 - ME921A.csv")
+linhas <- dados$...1
+dados %<>% select(-...1) %>% as.matrix()
+rownames(dados) <- linhas
+
+rede <- network(dados)
+```
+
+
+Gráficos
+```{r}
+data.frame(nome = linhas, freq = colSums(dados)) %>% 
+  ggplot(aes(x = reorder(nome, -freq), y = freq)) +
+  geom_bar(stat = "identity", color = "black", fill = "#f89205") +
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  labs(x = "Participante", y = "Quantidade de participantes que seguem a pessoa") 
+
+data.frame(nome = linhas, freq = rowSums(dados)) %>% 
+  ggplot(aes(x = reorder(nome, -freq), y = freq)) +
+  geom_bar(stat = "identity", color = "black", fill = "#f89205") +
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  labs(x = "Participante", y = "Quantidade de participantes que a pessoa segue") 
+
+heatmap(dados, Rowv = NA, Colv = NA, scale = "none", col = c("#fffebb", "#f89205"))
+
+plot(rede, label = 1:nrow(dados), mode = "fruchtermanreingold", coord = network.layout.fruchtermanreingold(rede, layout.par=NULL), vertex.col = "#f89205")
+```
+
+
+Modelo
+```{r}
+fit <- mixer(dados, qmin = 1, qmax = 5, method = "variational")
+mod <- getModel(fit)
+mod$q
+
+z <- t(mod$Taus)
+map(z)
+
+color <- brewer.pal(mod$q, "Accent")
+ccolor <- color[map(z)]
+plot(rede, coord = network.layout.fruchtermanreingold(rede, layout.par=NULL), vertex.col = ccolor)
+legend("topright", col = color, pch = 19, legend = 1:mod$q)
+```
+
